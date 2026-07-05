@@ -221,10 +221,17 @@ This feature provides a focused diagnostic view for oncological reporting.
 
 ### 10. Privacy-First Local AI Processing (`RunLlamaCLI`)
 
-To assist with stylistic corrections and complex data extraction without violating HIPAA/GDPR constraints, PathoText supports **100% offline LLM integration**.
+To support stylistic refinement and structured data extraction while maintaining strict HIPAA/GDPR compliance, PathoText provides fully offline Large Language Model (LLM) integration. No patient data leaves the local workstation.
 
-- **Technical Implementation:** The script acts as a robust wrapper for `llama.cpp`. It bypasses the interactive REPL mode by constructing a strict prompt file and executing `llama-completion.exe` via `RunWait`.
-- **Safety Mechanisms:** Outputs and errors are piped to temporary UTF-8 files to prevent character encoding destruction via standard Windows ANSI pipes. A hard `SetTimer` watchdog kills the child process tree after 180 seconds if inference hangs, preventing the main application thread from locking up. A side-by-side diff dialog (`_ShowAiDiffDialog`) forces the pathologist to verify any AI-generated changes before committing them.
+- **Technical implementation**
+   - PathoText acts as a wrapper around llama.cpp.
+   - Instead of using the interactive REPL, the application generates a deterministic UTF-8 prompt file and invokes llama-completion.exe via RunWait.
+Model responses are written to temporary UTF-8 files, avoiding character corruption caused by legacy Windows ANSI console pipes.
+
+- **Reliability and safety**
+   - A watchdog timer (SetTimer) automatically terminates the complete inference process tree after 180 seconds if inference becomes unresponsive, preventing GUI deadlocks.
+   - Standard output and error streams are captured separately for robust error reporting and debugging.
+   - AI-generated edits are never applied automatically. A dedicated side-by-side review dialog (_ShowAiDiffDialog) requires the pathologist to review and explicitly approve every suggested modification before it is committed.
 
 ### 11. Internationalization & Extension
 
