@@ -271,8 +271,9 @@ PathoText builds on the excellent work of several open-source projects and, for 
 
 - **[AutoHotkey v2](https://www.autohotkey.com/)** — the scripting language and runtime PathoText is written in.
 - **[SQLite](https://www.sqlite.org/)** — the embedded, serverless database engine used for all local data storage, and the **[SQLight.ahk](https://github.com/Nachtgigerbyte/SQLight)**-style AutoHotkey wrapper used to access it.
-- **[llama.cpp](https://github.com/ggml-org/llama.cpp)** (and the underlying **[ggml](https://github.com/ggml-org/ggml)** tensor library) by Georgi Gerganov and contributors — the local inference engine (`llama-completion.exe` / `llama-server.exe`) that powers every offline AI feature in PathoText.
+- **[llama.cpp](https://github.com/ggml-org/llama.cpp)** (and the underlying **[ggml](https://github.com/ggml-org/ggml)** tensor library) by Georgi Gerganov and contributors — the local inference engine (`llama-completion.exe` / `llama-server.exe`) that powers every offline AI feature in PathoText (MIT licence).
 - **[curl](https://curl.se/)** — used by the built-in AI Manager to download and resume model files.
+- **MedicalWP** — the icon used by the compiled script, designed by MadOyster (CC BY 3.0 US).
 - The GGUF model files distributed for use with PathoText are quantized/republished by their respective communities, building on the original model weights released by their creators, including:
-  - **[Microsoft Phi-4-mini-instruct](https://huggingface.co/microsoft/Phi-4-mini-instruct)**, quantized by **[bartowski](https://huggingface.co/bartowski)**.
-  - **[Qwen3-30B-A3B-Instruct-2507](https://huggingface.co/Qwen/Qwen3-30B-A3B-Instruct-2507)** by the Qwen team (Alibaba), quantized by **[unsloth](https://huggingface.co/unsloth)**.
+  - **[Microsoft Phi-4-mini-instruct](https://huggingface.co/microsoft/Phi-4-mini-instruct)**, quantized by **[bartowski](https://huggingface.co/bartowski)** (MIT licence).
+  - **[Qwen3-30B-A3B-Instruct-2507](https://huggingface.co/Qwen/Qwen3-30B-A3B-Instruct-2507)** by the Qwen team (Alibaba), quantized by **[unsloth](https://huggingface.co/unsloth)** (Apache-2.0 licence).
