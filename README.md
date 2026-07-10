@@ -1,17 +1,19 @@
 # PathoText
 Lightweight Tool for Efficient Structured Reporting in Surgical Pathology.
 
-PathoText is a fast, keyboard-driven text module and structured reporting system designed specifically for the daily diagnostic workflow in surgical pathology. Developed to seamlessly integrate into existing Laboratory Information Systems (LIS), it eliminates repetitive typing and standardizes complex diagnostic reports. The tool utilizes a lightweight local SQLite database for rapid data retrieval and features optional, privacy-safe local AI integration for intelligent text processing.
+PathoText is a keyboard-driven text module and structured reporting tool for surgical pathology. It was developed to simplify repetitive reporting tasks, speed up access to diagnostic text modules, and provide a consistent structure for pathology reports.
+
+The program is intended to complement existing Laboratory Information Systems (LIS) workflows rather than replace them.
 
 ## Key Features
-- **Lightning-Fast Navigation:** A fully keyboard-optimized interface allows pathologists to navigate departments, organs, and modules using F-keys and dedicated shortcuts without breaking visual focus.
-- **Smart Medical Search:** Built-in fuzzy search algorithms with Levenshtein distance automatically expand common medical abbreviations (e.g., "bcc" to "basalzellkarzinom", "pe" to "probeexzision").
-- **Structured Specimen Grouping:** Seamlessly handle multiple specimen fractions, logically grouping macroscopic, microscopic, and diagnostic texts into a cohesive final report.
-- **Dynamic & Conditional Fields:** Advanced form generation supporting free-text, defaults, dropdowns, randomized variants, and conditional logic.
-- **Privacy-First Local AI:** Optional integration with local Large Language Models (via [llama.cpp](https://github.com/ggml-org/llama.cpp)) for stylistic text correction and automated variable extraction, guaranteeing that zero patient data leaves the local machine. Multiple models can be managed side by side (e.g. a small model like Phi-4-mini for everyday use and a larger one like Qwen3-30B-A3B for more demanding text), either run directly on the local machine or hosted as a shared server for other workstations on the same network.
-- **Guideline Integration:** Instant access to linked PDF guidelines, WHO classifications, and IHC references directly from the diagnostic entry interface.
-- **Data Portability:** Full support for CSV import and export to easily manage and share diagnostic text modules.
-- **Core Workflow & Shortcuts:** PathoText is designed to operate unobtrusively in the background, invoked only when needed to construct a report.
+
+- Keyboard-based navigation using configurable shortcuts
+- Fuzzy search for medical terms and abbreviations
+- Grouping of specimen fractions and report components
+- Dynamic text fields with conditional logic
+- Optional local AI support for text correction and variable extraction
+- Direct access to linked PDF references and guidelines
+- CSV import and export of diagnostic modules
 
 ## Installation & Usage
 
@@ -173,15 +175,21 @@ PathoText is built for absolute keyboard efficiency. The application relies on g
 
 ---
 
-## ⚙️ Technical Architecture & Core Functionalities
+## ⚙️ Technical Details and Functionalities
 
-PathoText is written in AutoHotkey v2 (AHK v2) and is designed to handle high-throughput diagnostic reporting with maximum performance and minimal memory footprint.
+PathoText is written in AutoHotkey v2 (AHK v2) and is a portable application. No installer or Windows Registry modification is required.
 
-### 1. Advanced Fuzzy Search & Medical Abbreviation Engine
-Unlike standard substring filters, the search engine is built specifically for medical terminology.
-* **Technical Implementation:** Uses a custom, heavily optimized Levenshtein distance algorithm (`_Levenshtein`) with an early-exit threshold to maintain O(n) performance on keystrokes.
-* **Caching (`_GetNormCache`):** Normalization (lowercasing, umlaut replacement, special character stripping) is computationally expensive. The script calculates this once per database entry upon loading and caches it, ensuring that rapid typing (`NameFilterChanged` with a 150ms debounce) remains completely lag-free.
-* **Bidirectional Expansion:** The `_FuzzyTokenMatch` function utilizes a predefined abbreviation map (`_FuzzyAbbrevMapNorm`). Searching for "bcc" automatically matches "basalzellkarzinom" and vice versa, seamlessly bridging the gap between quick shorthand and official diagnostic nomenclature.
+### 1. Security notice (first launch)
+
+PathoText is an open-source project and the current Windows release is distributed as a freshly compiled executable that is **not digitally signed**.
+
+Because of this, Windows SmartScreen or some antivirus programs may display a warning when starting `PathoText.exe` for the first time. This does **not necessarily indicate a problem with the application**; such warnings are common for newly released executables from smaller open-source projects that do not yet have a reputation history with Microsoft or antivirus providers.
+
+PathoText includes the complete source code used to build the application. Institutions, laboratories, or organizations that require internally trusted software distribution can review the source code, compile the application themselves, and apply their own digital signature or certificate in accordance with their internal security policies.
+
+If you downloaded PathoText from the official GitHub repository, you can verify the included source code and build files yourself. If you have concerns, please review the source code or report any suspicious behavior through the GitHub issue tracker.
+
+Future releases may include additional verification or signing mechanisms as the project matures.
 
 ### 2. Intelligent Specimen Grouping (`GroupLinesIndexed`)
 Pathology reports often contain multiple blocks or biopsies belonging to the same anatomical site.
@@ -196,7 +204,7 @@ Standard text modules frequently require situational adjustments (e.g., grading,
   * `[Name=Fallback|IF:Source=Value:Text]` (Conditional logic)
 * **Real-time Evaluation:** The `ShowGroupedUnifiedForm` builds a dynamic GUI on the fly. Event listeners (`UpdateConditionals`) recalculate conditional fields instantaneously when their source fields change, preventing illogical diagnostic combinations before the text is even inserted.
 
-### 4. Privacy-First Local AI Processing
+### 4. Optional offline AI processing
 To assist with stylistic corrections and structured data extraction without violating HIPAA/GDPR constraints, PathoText supports 100% offline LLM integration built entirely on [llama.cpp](https://github.com/ggml-org/llama.cpp) — no request ever leaves the local machine (or, at most, the local network in "hosted server" mode).
 
 * **Three selectable AI modes** (under Settings → *Advanced AI Features*):
@@ -209,7 +217,7 @@ To assist with stylistic corrections and structured data extraction without viol
 * **Safety mechanisms:** Prompts are sent via a temporary UTF-8 file to avoid character corruption over legacy Windows ANSI pipes. A hard watchdog timer kills the inference process tree after 180 seconds if it hangs, preventing the main application thread from locking up. AI-generated edits are **never** applied automatically — a side-by-side diff dialog always requires the pathologist to review and explicitly accept (or reject) every suggested change before it is committed, section by section.
 
 ### 5. Multi-User Database Safety & Schema Migration
-PathoText is designed to work in networked environments where multiple pathologists might share the same underlying module database.
+PathoText is works in networked environments where multiple pathologists might share the same underlying module database.
 * **Technical Implementation:** It utilizes a local SQLite engine (`SQLight.ahk`) running in Write-Ahead Logging (`WAL`) mode with a 10-second `busy_timeout`. This prevents database locking errors when multiple users access the file simultaneously.
 * **Alphanumeric Scaling:** To prevent exhausting code IDs, `_NextAlphaNumericSuffix` queries the DB directly for the next available ID using a Base35 encoding system, allowing up to 1,225 unique modules per organ/department combination.
 * **Data Integrity:** Routine backups (`_DoDbBackup`) are automatically rotated, and schema updates (`_MigrateDbSchema`) are performed silently on startup to ensure backward compatibility with older database files.
@@ -223,16 +231,16 @@ Pasting text into third-party Laboratory Information Systems can be prone to foc
 PathoText utilizes `SQLight.ahk` for efficient local data storage and institute-wide scaling.
 
 - **WAL-Mode:** The database operates in Write-Ahead Logging mode to enable safe, concurrent access by multiple pathologists on a shared network drive.
-- **Network Integrity:** Implements a `10,000 ms busy_timeout` to handle network latency without locking the GUI, ensuring smooth performance even in high-traffic environments.
+- **Network Integrity:** Implements a `10,000 ms busy_timeout` to handle network latency without locking the GUI.
 - **Centralization:** Database paths and PDF reference folders can be configured to shared UNC paths via `settings.ini` for institute-wide uniformity.
 
 ### 8. IT Security & Privacy
 
-The tool is designed with **Security by Design** to ensure strict adherence to medical data regulations.
+PathoText is designed for environments where patient data must remain under local control.
 
-- **Local-Only Processing:** Zero cloud reliance; no patient data leaves the local machine (local AI modes), or the local network at most (hosted-server AI mode).
-- **Hardened Inputs:** Uses prepared statements for all database interactions to prevent SQL injection and ensure data integrity.
-- **Safety Mechanisms:** Input sanitization and routine schema migrations are performed silently on startup to maintain database consistency.
+- Local AI processing does not send patient information to external services.
+- Database operations use prepared statements.
+- No cloud service is required for the core functionality.
 
 ### 9. Malignancy Mode (`Ctrl + Alt + M`)
 
@@ -256,12 +264,17 @@ PathoText provides granular control over the report output and database structur
 - **Text Management:** Supports full CSV import/export for batch managing diagnostic modules.
 - **Validation:** Import routines include hash-based (`ModuleUID`) validation to prevent duplicate entries and maintain schema integrity.
 
-### 12. Backup & Reliability
+### 12. Backup & Recovery
 
 PathoText prioritizes data resilience and disaster recovery.
 
-- **Automated Backups:** `_DoDbBackup` verifies the existence of a daily backup at startup; if missing, the `.db` file is timestamped and archived.
-- **Rollback:** The system provides an automated recovery path, allowing users to restore from the last clean backup if a write corruption is detected during a session.
+PathoText creates automatic database backups to reduce the risk of data loss. Rollback can be initialized in the settings menu.
+
+### 13. Advanced Fuzzy Search & Medical Abbreviation Engine
+This section documents some internal implementation choices for developers and interested users. Unlike standard substring filters, the search engine is built specifically for medical terminology.
+* **Technical Implementation Details:** Uses a custom, heavily optimized Levenshtein distance algorithm (`_Levenshtein`) with an early-exit threshold to maintain O(n) performance on keystrokes.
+* **Caching (`_GetNormCache`):** Normalization (lowercasing, umlaut replacement, special character stripping) is computationally expensive. The script calculates this once per database entry upon loading and caches it, ensuring that rapid typing (`NameFilterChanged` with a 150ms debounce) remains completely lag-free.
+* **Bidirectional Expansion:** The `_FuzzyTokenMatch` function utilizes a predefined abbreviation map (`_FuzzyAbbrevMapNorm`). Searching for "bcc" automatically matches "basalzellkarzinom" and vice versa, seamlessly bridging the gap between quick shorthand and official diagnostic nomenclature.
 
 ---
 
