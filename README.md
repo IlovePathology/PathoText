@@ -90,7 +90,7 @@ When PathoText is started for the first time, it automatically detects that no `
    - After completing the wizard, PathoText creates a `settings.ini` file in the application directory.
    - This file serves as the **single source of truth** for all application settings.
 
-No pre-existing `settings.ini`, `error.log`, or database is required to roll out PathoText on a new machine — all three are created from scratch on first launch, and the internal numbering scheme for departments/organs/modules is collision-free by construction from an empty database.
+No pre-existing `settings.ini`, `error.log`, or database is required to roll out PathoText on a new machine - all three are created from scratch on first launch, and the internal numbering scheme for departments/organs/modules is collision-free by construction from an empty database.
 
 ---
 
@@ -119,7 +119,7 @@ The `settings.ini` file controls nearly every aspect of PathoText's behavior.
 
 ### Advanced AI Settings
 
-- A collapsible **"Advanced AI Features"** section lets you choose between three AI modes — running the model locally, connecting to a remote `llama-server`, or hosting a local server yourself for other workstations on the network — pick which downloaded model is active, save individual prompt templates, and decide whether multiple report sections are reviewed one at a time or together in a single comparison window.
+- A collapsible **"Advanced AI Features"** section lets you choose between three AI modes - running the model locally, connecting to a remote `llama-server`, or hosting a local server yourself for other workstations on the network - pick which downloaded model is active, save individual prompt templates, and decide whether multiple report sections are reviewed one at a time or together in a single comparison window.
 - All of the above is written to and read back from `settings.ini` immediately as it changes, so it survives restarts without any extra "Save" step.
 
 ---
@@ -205,16 +205,16 @@ Standard text modules frequently require situational adjustments (e.g., grading,
 * **Real-time Evaluation:** The `ShowGroupedUnifiedForm` builds a dynamic GUI on the fly. Event listeners (`UpdateConditionals`) recalculate conditional fields instantaneously when their source fields change, preventing illogical diagnostic combinations before the text is even inserted.
 
 ### 4. Optional offline AI processing
-To assist with stylistic corrections and structured data extraction without violating HIPAA/GDPR constraints, PathoText supports 100% offline LLM integration built entirely on [llama.cpp](https://github.com/ggml-org/llama.cpp) — no request ever leaves the local machine (or, at most, the local network in "hosted server" mode).
+To assist with stylistic corrections and structured data extraction without violating HIPAA/GDPR constraints, PathoText supports 100% offline LLM integration built entirely on [llama.cpp](https://github.com/ggml-org/llama.cpp) - no request ever leaves the local machine (or, at most, the local network in "hosted server" mode).
 
 * **Three selectable AI modes** (under Settings → *Advanced AI Features*):
-  1. **Use local AI** — runs `llama-completion.exe` directly on the workstation for each request.
-  2. **Use a remote AI server** — talks to an already-running `llama-server` elsewhere on the network (e.g. a more powerful shared machine).
-  3. **Host a local server** — starts and stops `llama-server.exe` on the current machine at the click of a button, showing the model name and the network address other workstations can connect to (mode 2, from their point of view).
+  1. **Use local AI** - runs `llama-completion.exe` directly on the workstation for each request.
+  2. **Use a remote AI server** - talks to an already-running `llama-server` elsewhere on the network (e.g. a more powerful shared machine).
+  3. **Host a local server** - starts and stops `llama-server.exe` on the current machine at the click of a button, showing the model name and the network address other workstations can connect to (mode 2, from their point of view).
 * **AI Manager:** A built-in model catalog (`lib/models/models.json`) lets you install, update, remove, and switch between multiple GGUF models without touching a config file by hand. Downloads run through `curl.exe` (bundled with Windows 10 1803+/11) with automatic resume support; an optional SHA-256 check (via `certutil`) and an ETag-based safety check together guard against resuming a download whose remote file changed in the meantime.
 * **Individual, savable prompts:** Both AI actions ("Style & Spelling" and "Dynamic Elements") start from a sensible default prompt, but any edited prompt can be saved, updated, or deleted as a named personal template and is remembered per action for next time.
 * **Section-aware & batch processing:** The AI can be pointed at specific report sections (Clinical Information, Microscopy, Diagnosis, Immunohistochemistry) instead of the whole text, and multiple selected sections can either be reviewed one dialog at a time or, optionally, together in a single side-by-side comparison window.
-* **Safety mechanisms:** Prompts are sent via a temporary UTF-8 file to avoid character corruption over legacy Windows ANSI pipes. A hard watchdog timer kills the inference process tree after 180 seconds if it hangs, preventing the main application thread from locking up. AI-generated edits are **never** applied automatically — a side-by-side diff dialog always requires the pathologist to review and explicitly accept (or reject) every suggested change before it is committed, section by section.
+* **Safety mechanisms:** Prompts are sent via a temporary UTF-8 file to avoid character corruption over legacy Windows ANSI pipes. A hard watchdog timer kills the inference process tree after 180 seconds if it hangs, preventing the main application thread from locking up. AI-generated edits are **never** applied automatically - a side-by-side diff dialog always requires the pathologist to review and explicitly accept (or reject) every suggested change before it is committed, section by section.
 
 ### 5. Multi-User Database Safety & Schema Migration
 PathoText is works in networked environments where multiple pathologists might share the same underlying module database.
@@ -253,7 +253,7 @@ This feature provides a focused diagnostic view for oncological reporting.
 
 PathoText is built to be language-agnostic for global medical application.
 
-- **Language Support:** All UI text resides in external `*.lang` files (key-value pairs). All six bundled languages (`de`, `en`, `es`, `fr`, `it`, `pl`) are kept in lockstep — automated checks ensure every key exists in every language and that placeholders (`{0}`, `{1}`, ...) line up.
+- **Language Support:** All UI text resides in external `*.lang` files (key-value pairs). All six bundled languages (`de`, `en`, `es`, `fr`, `it`, `pl`) are kept in lockstep - automated checks ensure every key exists in every language and that placeholders (`{0}`, `{1}`, ...) line up.
 - **Dynamic Loading:** The `T()` translation function fetches strings upon startup based on the `Language` setting in `settings.ini`. Adding a new language simply requires creating a new `.lang` file, which the system automatically detects.
 
 ### 11. Customization & Module Management
@@ -282,11 +282,11 @@ This section documents some internal implementation choices for developers and i
 
 PathoText builds on the excellent work of several open-source projects and, for its optional AI features, publicly available language models:
 
-- **[AutoHotkey v2](https://www.autohotkey.com/)** — the scripting language and runtime PathoText is written in.
-- **[SQLite](https://www.sqlite.org/)** — the embedded, serverless database engine used for all local data storage, and the **[SQLight.ahk](https://github.com/Nachtgigerbyte/SQLight)**-style AutoHotkey wrapper used to access it.
-- **[llama.cpp](https://github.com/ggml-org/llama.cpp)** (and the underlying **[ggml](https://github.com/ggml-org/ggml)** tensor library) by Georgi Gerganov and contributors — the local inference engine (`llama-completion.exe` / `llama-server.exe`) that powers every offline AI feature in PathoText (MIT licence).
-- **[curl](https://curl.se/)** — used by the built-in AI Manager to download and resume model files.
-- **MedicalWP** — the icon used by the compiled script, designed by MadOyster (CC BY 3.0 US).
+- **[AutoHotkey v2](https://www.autohotkey.com/)** - the scripting language and runtime PathoText is written in.
+- **[SQLite](https://www.sqlite.org/)** - the embedded, serverless database engine used for all local data storage, and the **[SQLight.ahk](https://github.com/Nachtgigerbyte/SQLight)**-style AutoHotkey wrapper used to access it.
+- **[llama.cpp](https://github.com/ggml-org/llama.cpp)** (and the underlying **[ggml](https://github.com/ggml-org/ggml)** tensor library) by Georgi Gerganov and contributors - the local inference engine (`llama-completion.exe` / `llama-server.exe`) that powers every offline AI feature in PathoText (MIT licence).
+- **[curl](https://curl.se/)** - used by the built-in AI Manager to download and resume model files.
+- **MedicalWP** - the icon used by the compiled script, designed by MadOyster (CC BY 3.0 US).
 - The GGUF model files distributed for use with PathoText are quantized/republished by their respective communities, building on the original model weights released by their creators, including:
   - **[Microsoft Phi-4-mini-instruct](https://huggingface.co/microsoft/Phi-4-mini-instruct)**, quantized by **[bartowski](https://huggingface.co/bartowski)** (MIT licence).
   - **[Qwen3-30B-A3B-Instruct-2507](https://huggingface.co/Qwen/Qwen3-30B-A3B-Instruct-2507)** by the Qwen team (Alibaba), quantized by **[unsloth](https://huggingface.co/unsloth)** (Apache-2.0 licence).
