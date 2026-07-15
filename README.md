@@ -276,6 +276,17 @@ This section documents some internal implementation choices for developers and i
 * **Caching (`_GetNormCache`):** Normalization (lowercasing, umlaut replacement, special character stripping) is computationally expensive. The script calculates this once per database entry upon loading and caches it, ensuring that rapid typing (`NameFilterChanged` with a 150ms debounce) remains completely lag-free.
 * **Bidirectional Expansion:** The `_FuzzyTokenMatch` function utilizes a predefined abbreviation map (`_FuzzyAbbrevMapNorm`). Searching for "bcc" automatically matches "basalzellkarzinom" and vice versa, seamlessly bridging the gap between quick shorthand and official diagnostic nomenclature.
 
+### 14. Integrated Speech-to-Text (STT)
+
+PathoText includes a fully integrated local Speech-to-Text pipeline based on **whisper.cpp**, enabling fast offline voice dictation directly into any application.
+
+* **Local Processing:** Speech recognition is performed entirely on the local machine using **whisper.cpp**. No audio is transmitted to external services, ensuring maximum privacy for sensitive medical data.
+* **Speech Manager:** A dedicated Speech Manager handles the installation of `whisper.cpp`, model downloads, microphone selection, and overall STT configuration without requiring manual setup.
+* **Audio Recording:** Audio capture is performed using **SoX (Sound eXchange)**, providing reliable microphone recording and preprocessing before transcription.
+* **Push-to-Talk Workflow:** Dictation is initiated via a configurable hotkey. Audio is recorded while the key is held and automatically transcribed when released, allowing seamless integration into existing reporting workflows.
+* **Whisper Model Support:** Multiple Whisper models are supported, allowing users to balance transcription speed, memory usage, and recognition accuracy depending on their hardware.
+* **Optional AI Post-Processing:** After transcription, the generated text can optionally be refined using an LLM to improve punctuation, capitalization, formatting, and correct common speech recognition errors while preserving the original medical content.
+
 ---
 
 ## Acknowledgments
@@ -287,6 +298,8 @@ PathoText builds on the excellent work of several open-source projects and, for 
 - **[llama.cpp](https://github.com/ggml-org/llama.cpp)** (and the underlying **[ggml](https://github.com/ggml-org/ggml)** tensor library) by Georgi Gerganov and contributors - the local inference engine (`llama-completion.exe` / `llama-server.exe`) that powers every offline AI feature in PathoText (MIT licence).
 - **[curl](https://curl.se/)** - used by the built-in AI Manager to download and resume model files.
 - **MedicalWP** - the icon used by the compiled script, designed by MadOyster (CC BY 3.0 US).
+- **[whisper.cpp](https://github.com/ggml-org/whisper.cpp)** (with pre-converted models available on **[Hugging Face](https://huggingface.co/ggerganov/whisper.cpp)**) by Georgi Gerganov and contributors - the high-performance local speech recognition engine that powers PathoText's offline Speech-to-Text functionality.
+- **[SoX (Sound eXchange)](https://sox.sourceforge.net/)** - the cross-platform command-line audio processing utility used for microphone recording and audio preprocessing.
 - The GGUF model files distributed for use with PathoText are quantized/republished by their respective communities, building on the original model weights released by their creators, including:
   - **[Microsoft Phi-4-mini-instruct](https://huggingface.co/microsoft/Phi-4-mini-instruct)**, quantized by **[bartowski](https://huggingface.co/bartowski)** (MIT licence).
   - **[Qwen3-30B-A3B-Instruct-2507](https://huggingface.co/Qwen/Qwen3-30B-A3B-Instruct-2507)** by the Qwen team (Alibaba), quantized by **[unsloth](https://huggingface.co/unsloth)** (Apache-2.0 licence).
