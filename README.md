@@ -133,6 +133,8 @@ PathoText is built for absolute keyboard efficiency. The application relies on g
 | :--- | :--- |
 | `Ctrl + Alt + F5` | **Master Toggle:** First run initializes the setup. Subsequently toggles all application hotkeys on/off. |
 | `F5` | **Launch/Cycle:** Opens the GUI if closed. If open, acts as the shortcut for the 4th configured department. |
+| `Ctrl + Alt + B` | **AI-powered snippet capture:**  reads selection from clipboard, analyzes with configured LLM, and populates the "Add text snippet" dialog, ready for finalization. |
+
 
 ### Navigation & Search
 | Shortcut | Action |
