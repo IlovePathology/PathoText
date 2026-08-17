@@ -21,7 +21,7 @@ PathoText is designed as a **portable application** and does not require a tradi
 
 ### Directory Structure
 
-The directory layout is essential for proper operation, particularly for loading the `sqlite3.dll`, language files, and the optional local AI components.
+The directory layout is essential for proper operation, particularly for loading the `sqlite3.dll`, language files, and the optional local AI and speech-to-text components.
 
 #### A) Compiled Mode (Recommended for End Users)
 
@@ -31,18 +31,30 @@ In the compiled version, only `PathoText.exe` needs to be launched. All required
 PathoText/
 ├── PathoText.exe
 ├── lib/
-│   ├── sqlite3.dll         # Required for SQLite database access
-│   ├── engine/             # Optional: llama.cpp runtime for local AI
-│   │   ├── llama-completion.exe   # Used by AI mode "Use local AI"
-│   │   ├── llama-server.exe       # Used by AI mode "Host a local server"
-│   │   └── ...                    # Supporting DLLs shipped with llama.cpp
-│   └── models/             # Optional: .gguf language models
-│       └── models.json     # Model catalog for the built-in AI Manager
-├── lang/          
-│   └── xx.lang             # Language files
-├── <your-database>.db      # SQLite database (name/location set on first launch)
-├── backup/                 # Automatic database backups
-└── pdf/                    # Linked guideline and reference PDFs
+│   ├── sqlite3.dll              # Required for SQLite database access
+│   ├── lang/                    # Language files (one per supported language)
+│   │   └── xx.lang
+│   ├── engine/                  # Optional: llama.cpp runtime for local AI
+│   │   ├── llama-completion.exe # Used by AI mode "Use local AI"
+│   │   ├── llama-server.exe     # Used by AI mode "Host a local server"
+│   │   └── ...                  # Supporting DLLs shipped with llama.cpp
+│   ├── models/                  # Optional: AI and speech-to-text model files
+│   │   ├── models.json          # AI model catalog for the built-in AI Manager
+│   │   └── whisper-models.json  # STT model catalog for the Speech Manager
+│   └── whisper/                 # Optional: whisper.cpp runtime for speech input
+│       ├── whisper-cli.exe      # Speech-to-text inference engine
+│       ├── whisper-server.exe   # Optional: persistent STT server mode
+│       ├── sox.exe              # Audio recording and preprocessing
+│       └── ...                  # Supporting DLLs shipped with whisper.cpp
+├── data/                        # Application data (created automatically on first launch)
+│   ├── settings.ini             # User settings and preferences
+│   ├── error.log                # Application log
+│   └── backup/                  # Automatic daily database backups
+│       ├── diagnosen.db.bak.1   # Most recent backup
+│       ├── diagnosen.db.bak.2
+│       └── diagnosen.db.bak.3
+├── diagnosen.db                 # SQLite database (name/location set on first launch)
+└── pdf/                         # Linked guideline and reference PDFs
 ```
 
 #### B) Source Mode (For Developers & Customization)
@@ -51,14 +63,15 @@ In source mode, the script is executed directly using the **AutoHotkey v2** inte
 
 ```text
 PathoText/
-├── PathoText.ahk           # Application entry point
+├── PathoText.ahk                # Application entry point
 ├── lib/
-│   ├── SQLight.ahk         # AutoHotkey SQLite wrapper
+│   ├── SQLight.ahk              # AutoHotkey SQLite wrapper
 │   └── sqlite3.dll
-├── ...                     # Remaining structure identical to compiled mode
+├── ...                          # Remaining structure identical to compiled mode
 ```
 
-> **Note:** The `lib/engine/` and `lib/models/` folders are entirely optional. Without them, PathoText runs as a pure text-module/reporting tool; the AI features simply stay unavailable until a model is installed via the AI Manager (see below).
+> **Note:** The `lib/engine/`, `lib/models/`, and `lib/whisper/` folders are entirely optional. Without them, PathoText runs as a pure text-module/reporting tool; AI and speech-to-text features simply stay unavailable until the respective components are installed via the built-in managers (AI Manager / Speech Manager).
+
 
 ---
 
