@@ -7,54 +7,68 @@ The program is intended to complement existing Laboratory Information Systems (L
 
 ## Key Features
 
-- Keyboard-based navigation using configurable shortcuts
-- Fuzzy search for medical terms and abbreviations
-- Grouping of specimen fractions and report components
-- Dynamic text fields with conditional logic
-- Optional local AI support for text correction and variable extraction
-- Direct access to linked PDF references and guidelines
-- CSV import and export of diagnostic modules
+- **Keyboard-Driven Workflow:** Ultra-fast, keyboard-only navigation and report generation using configurable hotkeys and a master toggle (`Ctrl + Alt + F5`).
+- **Advanced Fuzzy Search:** Instant medical term and abbreviation matching via optimized Levenshtein distance with normalization caching.
+- **Dual Execution Modes:** Full operational support with dynamic mode switching between Core Mode (lightweight, zero-dependency single EXE) and Full Mode.
+- **Intelligent Specimen Grouping:** Dynamic fraction assembly (`GroupLinesIndexed`) with automatic index dense-mapping and number range consolidation (e.g., "1. - 3. Adenocarcinoma").
+- **Unified Dynamic Form Fields:** Custom dynamic variable parsing (`ExtractUnifiedVariables`) supporting default values, dropdowns, and real-time conditional logic.
+- **Integrated Offline Speech-to-Text (STT):** Local voice dictation powered by whisper.cpp with push-to-talk workflow, configurable beam size, and optional VAD silence trimming via SoX.
+- **Persistent STT Server Mode:** High-performance HTTP-based speech recognition routing (`_RunWhisperViaServer`) with lazy lifecycle management and process tree recovery.
+- **Automated Text Replacement Engine:** Custom post-speech/AI word replacements with literal symbol support (`p53+`), German umlaut boundary detection, and long-phrase prioritization.
+- **Target Window Safety Guard:** Three-tier target window validation (`IsValidTargetWindow`) preventing accidental text injection into wrong LIS applications.
+- **100% Offline LLM Processing:** Optional AI-powered text refinement, stylistic correction, and variable extraction running locally via llama.cpp (CLI, remote, or self-hosted server).
+- **AI Snippet Capture:** Smart shortcut-driven (`Ctrl + Alt + B`) clipboard extraction to analyze selection and pre-fill new text module creation.
+- **Multi-User SQLite Architecture:** Concurrent multi-user access via WAL-mode database operations with automatic daily rolling backups and schema migration.
+- **Direct PDF Reference Access:** Quick access to linked diagnostic guidelines, WHO classification manuals, and institutional standards.
+- **CSV Data Exchange & Security:** Full CSV import/export for diagnostic modules with hash-based UID duplicate prevention and standard proxy network support.
+
+---
+
+## Architecture & Modes
+
+PathoText operates in two distinct execution modes depending on system requirements and environment:
+
+- **Full Mode:** Includes all features, including local Speech-to-Text (whisper.cpp / SoX) and local LLM-assisted text refinement.
+- **Core Mode:** A lightweight, pure text-module and reporting setup with zero external binary dependencies for AI/STT.
+- **Automatic Detection:** The application dynamically detects its running mode via `data\build.ini` (`[Build] Mode=core|full`), compiled resource checks, or binary presence heuristics. In Core Mode, AI/STT subsystems degrade gracefully without false warnings or missing resource errors.
 
 ## Installation & Usage
 
 PathoText is designed as a **portable application** and does not require a traditional installation or Windows Registry modifications.
 
-### Directory Structure
-
-The directory layout is essential for proper operation, particularly for loading the `sqlite3.dll`, language files, and the optional local AI and speech-to-text components.
+### Deployment Modes & Directory Structure
 
 #### A) Compiled Mode (Recommended for End Users)
 
-In the compiled version, only `PathoText.exe` needs to be launched. All required dependencies must reside in the expected directory structure:
+In the compiled version, PathoText runs out-of-the-box as a **single-file executable**. Language resources (`.lang` files) are directly embedded into `PathoText.exe` via Win32 resources, eliminating any requirement for external runtime folders.
+
+- **Core Mode (Zero Setup):** You only need `PathoText.exe`. All required internal folders (`data/`, `data/backup/`), local databases, and configuration files (`settings.ini`) are automatically created on first launch if they do not exist.
+- **Full Mode (Optional Extensions):** Advanced offline AI and Speech-to-Text capabilities require placing their respective engine binaries and model files into the `lib/` directory structure.
 
 ```text
 PathoText/
-├── PathoText.exe
-├── lib/
-│   ├── sqlite3.dll              # Required for SQLite database access
-│   ├── lang/                    # Language files (one per supported language)
-│   │   └── xx.lang
-│   ├── engine/                  # Optional: llama.cpp runtime for local AI
-│   │   ├── llama-completion.exe # Used by AI mode "Use local AI"
-│   │   ├── llama-server.exe     # Used by AI mode "Host a local server"
-│   │   └── ...                  # Supporting DLLs shipped with llama.cpp
-│   ├── models/                  # Optional: AI and speech-to-text model files
-│   │   ├── models.json          # AI model catalog for the built-in AI Manager
-│   │   └── whisper-models.json  # STT model catalog for the Speech Manager
-│   └── whisper/                 # Optional: whisper.cpp runtime for speech input
-│       ├── whisper-cli.exe      # Speech-to-text inference engine
-│       ├── whisper-server.exe   # Optional: persistent STT server mode
-│       ├── sox.exe              # Audio recording and preprocessing
-│       └── ...                  # Supporting DLLs shipped with whisper.cpp
-├── data/                        # Application data (created automatically on first launch)
+├── PathoText.exe                # Single executable (All Core resources embedded)
+├── diagnosen.db                 # SQLite database (created automatically on first launch)
+├── data/                        # Application data directory (created automatically)
 │   ├── settings.ini             # User settings and preferences
+│   ├── tts_replacements.txt     # Custom post-STT automated text replacements
 │   ├── error.log                # Application log
 │   └── backup/                  # Automatic daily database backups
-│       ├── diagnosen.db.bak.1   # Most recent backup
-│       ├── diagnosen.db.bak.2
-│       └── diagnosen.db.bak.3
-├── diagnosen.db                 # SQLite database (name/location set on first launch)
-└── pdf/                         # Linked guideline and reference PDFs
+│       ├── diagnosen.db.bak.1
+│       └── ...
+├── pdf/                         # Linked guideline and reference PDFs (optional)
+└── lib/                         # Optional extensions directory (Full Mode only)
+    ├── sqlite3.dll              # Optional: SQLite fallback library
+    ├── lang/                    # Optional: External .lang files for dynamic overrides
+    ├── engine/                  # Optional (Full Mode): llama.cpp runtime for local AI
+    │   ├── llama-completion.exe
+    │   └── llama-server.exe
+    ├── models/                  # Optional (Full Mode): AI model catalog (models.json)
+    │   └── whisper-models.json  # STT model catalog for Speech Manager
+    └── whisper/                 # Optional (Full Mode): whisper.cpp & SoX runtime
+        ├── whisper-cli.exe
+        ├── whisper-server.exe
+        └── sox.exe
 ```
 
 #### B) Source Mode (For Developers & Customization)
@@ -70,14 +84,13 @@ PathoText/
 ├── ...                          # Remaining structure identical to compiled mode
 ```
 
-> **Note:** The `lib/engine/`, `lib/models/`, and `lib/whisper/` folders are entirely optional. Without them, PathoText runs as a pure text-module/reporting tool; AI and speech-to-text features simply stay unavailable until the respective components are installed via the built-in managers (AI Manager / Speech Manager).
-
+> **Note:** The `lib/engine/`, `lib/models/`, and `lib/whisper/` folders are entirely optional. In Core Mode or without these folders, PathoText runs as a high-performance text-module/reporting tool.
 
 ---
 
 ## First Launch & Initialization
 
-When PathoText is started for the first time, it automatically detects that no `settings.ini` exists and launches the initial configuration wizard.
+When PathoText is started for the first time, it automatically detects that no `data/settings.ini` exists and launches the initial configuration wizard.
 
 ### Initial Setup
 
@@ -100,16 +113,16 @@ When PathoText is started for the first time, it automatically detects that no `
    - This signature can be appended automatically to generated reports.
 
 6. **Configuration File**
-   - After completing the wizard, PathoText creates a `settings.ini` file in the application directory.
+   - After completing the wizard, PathoText creates a `settings.ini` file inside the `data/` directory.
    - This file serves as the **single source of truth** for all application settings.
 
-No pre-existing `settings.ini`, `error.log`, or database is required to roll out PathoText on a new machine - all three are created from scratch on first launch, and the internal numbering scheme for departments/organs/modules is collision-free by construction from an empty database.
+No pre-existing `data/settings.ini`, `data/error.log`, or database is required to roll out PathoText on a new machine—all are created from scratch on first launch, and legacy root configurations are automatically migrated.
 
 ---
 
 ## Configuration via `settings.ini`
 
-The `settings.ini` file controls nearly every aspect of PathoText's behavior.
+The `data/settings.ini` file controls nearly every aspect of PathoText's behavior.
 
 ### Paths
 
@@ -118,8 +131,13 @@ The `settings.ini` file controls nearly every aspect of PathoText's behavior.
 
 ### Language
 
-- Under `[Settings] -> Language`, you can switch between any available `.lang` files (for example, `en`, `de`, `es`, `fr`, `it`, or `pl`).
-- Languages can be added individually at any time. Existing languages can be used as templates for this purpose. The script then recognizes them automatically.
+- Under `[Settings] -> Language`, you can switch between any available localization resources (for example, `en`, `de`, `es`, `fr`, `it`, or `pl`).
+- External `.lang` files can be placed in `lib/lang/` for dynamic overrides or additions.
+
+### Target Window Safety Guard
+
+- Target window validation enforces a three-tier safety check (process whitelist → control class check → main window fallback) during text insertion.
+- The target window warning dialog includes an optional "Do not show this message again" toggle (`SuppressWinWarn=1`).
 
 ### Default Report Sections
 
@@ -127,194 +145,155 @@ The `settings.ini` file controls nearly every aspect of PathoText's behavior.
 
 ### Global Hotkeys
 
-- The Master Toggle via Ctrl + Alt + F5 (`hotkeyEnabled`) option enables or disables PathoText's global keyboard shortcuts.
-- This is useful for preventing conflicts with other Laboratory Information Systems (LIS) or specialized medical software.
+- The Master Toggle via `Ctrl + Alt + F5` (`hotkeyEnabled`) enables or disables PathoText's global keyboard shortcuts to avoid conflicts with LIS software.
 
-### Advanced AI Settings
+### Advanced AI & Speech Settings
 
-- A collapsible **"Advanced AI Features"** section lets you choose between three AI modes - running the model locally, connecting to a remote `llama-server`, or hosting a local server yourself for other workstations on the network - pick which downloaded model is active, save individual prompt templates, and decide whether multiple report sections are reviewed one at a time or together in a single comparison window.
-- All of the above is written to and read back from `settings.ini` immediately as it changes, so it survives restarts without any extra "Save" step.
+- A collapsible **"Advanced AI Features"** section lets you choose between local AI execution, remote `llama-server` connection, or self-hosting a local server.
+- The Speech-to-Text configuration exposes beam size selection (1–20), greedy decoding parameters, optional server mode execution, and optional audio feedback (`SttRecordingSound`).
 
 ---
 
-## ⌨️ Keyboard Shortcuts & Navigation
+## Keyboard Shortcuts & Navigation
 
-PathoText is built for absolute keyboard efficiency. The application relies on global and context-specific hotkeys to ensure hands never have to leave the keyboard during microscopic evaluation.
+PathoText is built for absolute keyboard efficiency.
 
 ### Global & Launch
 | Shortcut | Action |
 | :--- | :--- |
-| `Ctrl + Alt + F5` | **Master Toggle:** First run initializes the setup. Subsequently toggles all application hotkeys on/off. |
-| `F5` | **Launch/Cycle:** Opens the GUI if closed. If open, acts as the shortcut for the 4th configured department. |
-| `Ctrl + Alt + B` | **AI-powered snippet capture:**  reads selection from clipboard, analyzes with configured LLM, and populates the "Add text snippet" dialog, ready for finalization. |
-
+| `Ctrl + Alt + F5` | **Master Toggle:** Toggles all application hotkeys on/off. |
+| `F5` | **Launch/Cycle:** Opens the GUI if closed. If open, acts as shortcut for the 4th department. |
+| `Ctrl + Alt + B` | **AI Snippet Capture:** Reads selection from clipboard, analyzes with LLM, and opens pre-filled "Add text snippet" dialog. |
+| `Ctrl + Alt + R` | **Add Text Replacement:** Reads highlighted text and opens the automated STT/text replacement setup dialog. |
 
 ### Navigation & Search
 | Shortcut | Action |
 | :--- | :--- |
-| `[Text] + Space` | **Fuzzy Search:** Type in the main field to instantly filter modules using the custom Levenshtein algorithm. |
-| `Tab` / `Shift + Tab` | **Focus Toggle:** Switch focus directly between the search field and the results list. |
+| `[Text] + Space` | **Fuzzy Search:** Type in the main field to instantly filter modules (requires ≥ 2 characters for fuzzy matching). |
+| `Tab` / `Shift + Tab` | **Focus Toggle:** Switch focus directly between search field and results list. |
 
 ### Department & Organ Selection
 | Shortcut | Action |
 | :--- | :--- |
 | `F1` | **Reset Filter:** Shows all departments and organs. |
 | `F2` - `F9` | **Select Department:** Rapidly select departments 1 through 8. |
-| `F2` - `F9` *(Repeated)* | **Cycle Organs:** Pressing the same F-key again cycles through the organs within that department. |
+| `F2` - `F9` *(Repeated)* | **Cycle Organs:** Pressing the same F-key again cycles through organs within that department. |
 | `F10` | **Select 9th Department:** Assigned to the 9th department if configured. |
 
 ### Specimen Assembly (Fractions)
 | Shortcut | Action |
 | :--- | :--- |
-| `Enter` | **Add New Specimen:** Adds the selected module as a *new* specimen fraction (increments grouping number). |
-| `Alt + Enter` | **Combine Specimen:** Appends the selected module to the *currently active* specimen fraction (shares grouping number). |
-| `Double Click` | **Remove Specimen:** Removes the clicked fraction from the drafted report list. |
-| `Ctrl + Z` | **Undo:** Removes the most recently added specimen fraction. |
+| `Enter` | **Add New Specimen:** Adds selected module as a *new* specimen fraction (increments grouping number). |
+| `Alt + Enter` | **Combine Specimen:** Appends selected module to *currently active* specimen fraction. |
+| `Double Click` | **Remove Specimen:** Removes clicked fraction from drafted report. |
+| `Ctrl + Z` | **Undo:** Removes most recently added specimen fraction. |
 
 ### Report Configuration Toggles
 | Shortcut | Action |
 | :--- | :--- |
-| `Ctrl + Alt + M` | **Malignancy Mode:** Filters list strictly for malignant/metastatic diagnoses (highlights list red). |
-| `Ctrl + U` | **Toggle Clinical Info:** Includes/excludes the "Übersandt/Clinical Info" section. |
-| `Ctrl + M` | **Toggle Microscopy:** Includes/excludes the "Mikroskopie/Microscopic" section. |
-| `Ctrl + I` | **Toggle IHC:** Includes/excludes the "Immunohistochemistry" section. |
-| `Ctrl + S` | **Toggle Signature:** Appends the configured pathologist's signature block. |
-| `Ctrl + D` | **Toggle Dynamic Fields:** Enables/disables the resolution of dynamic form fields. |
+| `Ctrl + Alt + M` | **Malignancy Mode:** Filters list strictly for malignant diagnoses (highlights red). |
+| `Ctrl + U` | **Toggle Clinical Info:** Includes/excludes "Clinical Info" section. |
+| `Ctrl + M` | **Toggle Microscopy:** Includes/excludes "Microscopic" section. |
+| `Ctrl + I` | **Toggle IHC:** Includes/excludes "Immunohistochemistry" section. |
+| `Ctrl + S` | **Toggle Signature:** Appends pathologist's signature block. |
+| `Ctrl + D` | **Toggle Dynamic Fields:** Enables/disables resolution of dynamic form fields. |
 
 ### Finalizing & Submission
 | Shortcut | Action |
 | :--- | :--- |
-| `Ctrl + Enter` | **Submit Report:** Generates the final text, resolves variables, and pastes it into the LIS. |
-| `Ctrl + Alt + Enter` | **Manual Labeling:** Opens the batch-editing dialog to define sizes, block numbers, and stains for all fractions. |
-| `Esc` | **Close/Abort:** Sequentially closes active sub-dialogs, then the main GUI. |
+| `Ctrl + Enter` | **Submit Report:** Generates final text, resolves variables, and pastes into LIS target window. |
+| `Ctrl + Alt + Enter` | **Manual Labeling:** Opens batch-editing dialog for sizes, block numbers, and stains. |
+| `Esc` | **Close/Abort:** Sequentially closes active sub-dialogs, then main GUI. |
 
 ---
 
-## ⚙️ Technical Details and Functionalities
+## Technical Details and Functionalities
 
-PathoText is written in AutoHotkey v2 (AHK v2) and is a portable application. No installer or Windows Registry modification is required.
+PathoText is written in AutoHotkey v2 (AHK v2) and operates as a portable application with zero reliance on traditional installation routines or Windows Registry modifications.
 
-### 1. Security notice (first launch)
+### 1. Security & Target Window Safety Guard
+- **Unsigned Executable:** Distributed as an open-source project with compiled executables. Organizations requiring trusted local deployments can review source code, build locally, and apply internal certificates.
+- **Target Window Verification (`IsValidTargetWindow`):** To prevent accidental text injection into incorrect windows, text insertion triggers a mandatory three-tier validation check (process whitelist → control class check → main window fallback). 
+- **User Preference:** Warning dialogs support direct suppression (`SuppressWinWarn=1`), persisted automatically in `data/settings.ini`.
 
-PathoText is an open-source project and the current Windows release is distributed as a freshly compiled executable that is **not digitally signed**.
+### 2. Core vs. Full Mode Architecture
+- **Dynamic Mode Detection (`_DetectAppMode`):** Automatically determines whether the app runs in lightweight Core Mode or feature-complete Full Mode via `data/build.ini` (`[Build] Mode=core|full`), compiled resource inspection, or binary heuristics.
+- **Embedded Resources:** Compiled binaries embed `.lang` files via `@Ahk2Exe-AddResource` directives, loaded using Win32 API routines (`_LoadLangFromResource`), eliminating external folder requirements while preserving dynamic overrides via `lib/lang/`.
+- **Graceful Feature Degradation:** In Core Mode, missing AI/STT binaries automatically disable advanced menu items (`.Enabled := false`) with clear tooltips instead of throwing startup errors.
 
-Because of this, Windows SmartScreen or some antivirus programs may display a warning when starting `PathoText.exe` for the first time. This does **not necessarily indicate a problem with the application**; such warnings are common for newly released executables from smaller open-source projects that do not yet have a reputation history with Microsoft or antivirus providers.
+### 3. Intelligent Specimen Grouping (`GroupLinesIndexed`)
+Pathology reports frequently handle multiple biopsy blocks for identical anatomical locations.
+- **Technical Implementation:** Maintains an internal array of `fractions`. Appending with `Alt+Enter` assigns the preceding entry's `GroupNum`.
+- **Dynamic Formatting:** The `GroupLinesIndexed` function condenses matching entries (e.g., merging identical diagnoses into ranges like `"1. - 3. Adenocarcinoma"`) and applies a dense numbering map (`_DenseGroupNumMap`) to enforce sequential output even if intermediate fractions are deleted.
 
-PathoText includes the complete source code used to build the application. Institutions, laboratories, or organizations that require internally trusted software distribution can review the source code, compile the application themselves, and apply their own digital signature or certificate in accordance with their internal security policies.
+### 4. Unified Dynamic Variables & Conditional Logic
+- **Regex Parsing (`ExtractUnifiedVariables`):** Evaluates inline dynamic syntax including free text (`[Variable]`), pre-filled defaults (`[Variable=Default]`), dropdown menus (`[Variable|Opt1§Opt2]`), and conditional evaluation (`[Name=Fallback|IF:Source=Value:Text]`).
+- **Real-Time Dynamic GUI (`ShowGroupedUnifiedForm`):** Event listeners (`UpdateConditionals`) dynamically recalculate conditional fields on keystroke/selection changes before final text construction.
 
-If you downloaded PathoText from the official GitHub repository, you can verify the included source code and build files yourself. If you have concerns, please review the source code or report any suspicious behavior through the GitHub issue tracker.
+### 5. High-Performance Fuzzy Search & Abbreviation Engine
+- **Optimized Matching:** Custom Levenshtein distance algorithm (`_Levenshtein`) with early-exit thresholds and a Min-Length Guard (triggers only for inputs ≥ 2 characters) to maintain O(n) performance.
+- **Normalization Cache (`_GetNormCache`):** Pre-computes lowercasing, umlaut expansion, and symbol stripping per database entry to support debounced (150 ms) lag-free search.
+- **Bidirectional Abbreviation Mapping (`_FuzzyAbbrevMapNorm`):** Token matching automatically expands clinical shorthand (e.g., matching `"bcc"` to `"basalzellkarzinom"` and vice versa).
 
-Future releases may include additional verification or signing mechanisms as the project matures.
+### 6. Automated Post-STT & Custom Text Replacements
+- **Automated Replacement Engine:** Custom user replacements are stored locally in `data/tts_replacements.txt` and processed immediately prior to final output typing.
+- **Quick Creation (`Ctrl + Alt + R`):** Selection-driven popup pre-fills misrecognized terms while safely capturing and restoring user clipboard contents.
+- **Smart Rule Matching:** Handles literal special characters and biological terms (e.g., `p53+`), full German umlaut boundary detection, and prioritizes longer phrases over single words to prevent broken partial substitutions.
 
-### 2. Intelligent Specimen Grouping (`GroupLinesIndexed`)
-Pathology reports often contain multiple blocks or biopsies belonging to the same anatomical site.
-* **Technical Implementation:** The script maintains an array of `fractions`. When users press `Alt+Enter`, the new module is assigned the `GroupNum` of the preceding entry. The `GroupLinesIndexed` function dynamically condenses these entries (e.g., merging identical texts across multiple block numbers into ranges like "1. - 3. Adenocarcinoma") and applies a dense numbering map (`_DenseGroupNumMap`) so the final report always outputs sequential numbers, even if intermediate fractions were deleted.
+### 7. Integrated Speech-to-Text (STT) & Audio Pipeline
+- **Offline Dictation (whisper.cpp & SoX):** Offline voice recognition with audio capture and VAD (Voice Activity Detection) silence trimming via SoX (`silence 1 0.3 1% reverse...`).
+- **CLI & HTTP Server Modes:** Supports execution via direct CLI or local HTTP server (`_RunWhisperViaServer` via `curl`) with lazy lifecycle management, dynamic startup timeouts, and process-tree teardown on exit.
+- **Decoding & UI Controls:** Features configurable beam sizes (1–20), zero-temperature greedy decoding to minimize silence hallucinations, optional start/end audio feedback (880 Hz / 440 Hz), and fixed top-left dictation status indicators (`x10 y10`).
 
-### 3. Unified Dynamic Variables & Conditional Logic
-Standard text modules frequently require situational adjustments (e.g., grading, resection margins).
-* **Technical Implementation:** A custom Regex parser (`ExtractUnifiedVariables`) scans texts for a unified syntax:
-  * `[Variable]` (Free text)
-  * `[Variable=Default]` (Pre-filled default)
-  * `[Variable|Opt1§Opt2]` (Dropdown)
-  * `[Name=Fallback|IF:Source=Value:Text]` (Conditional logic)
-* **Real-time Evaluation:** The `ShowGroupedUnifiedForm` builds a dynamic GUI on the fly. Event listeners (`UpdateConditionals`) recalculate conditional fields instantaneously when their source fields change, preventing illogical diagnostic combinations before the text is even inserted.
+### 8. Offline AI Processing & Refinement
+- **100% Local LLM Integration:** Powered by **llama.cpp** in three operational modes (Local CLI, Remote Server, or Self-Hosted Server).
+- **Prompt & Catalog Management:** Built-in AI Manager handles model downloads via `curl` with resume support, SHA-256 validation (`certutil`), custom prompt template storage, 180-second watchdog execution timers, and side-by-side diff acceptance dialogs.
 
-### 4. Optional offline AI processing
-To assist with stylistic corrections and structured data extraction without violating HIPAA/GDPR constraints, PathoText supports 100% offline LLM integration built entirely on [llama.cpp](https://github.com/ggml-org/llama.cpp) - no request ever leaves the local machine (or, at most, the local network in "hosted server" mode).
+### 9. Atomic Target Window Pasting (`SubmitText`)
+- **Focus Safety:** Validates target window parameters against captured handles prior to injection.
+- **Clipboard Management:** Backs up clipboard data via `ClipboardAll()`, verifies payload synchronization via `ClipWait`, forces atomic injection (`SendInput "^v"`), and restores historical clipboard contents within milliseconds.
 
-* **Three selectable AI modes** (under Settings → *Advanced AI Features*):
-  1. **Use local AI** - runs `llama-completion.exe` directly on the workstation for each request.
-  2. **Use a remote AI server** - talks to an already-running `llama-server` elsewhere on the network (e.g. a more powerful shared machine).
-  3. **Host a local server** - starts and stops `llama-server.exe` on the current machine at the click of a button, showing the model name and the network address other workstations can connect to (mode 2, from their point of view).
-* **AI Manager:** A built-in model catalog (`lib/models/models.json`) lets you install, update, remove, and switch between multiple GGUF models without touching a config file by hand. Downloads run through `curl.exe` (bundled with Windows 10 1803+/11) with automatic resume support; an optional SHA-256 check (via `certutil`) and an ETag-based safety check together guard against resuming a download whose remote file changed in the meantime.
-* **Individual, savable prompts:** Both AI actions ("Style & Spelling" and "Dynamic Elements") start from a sensible default prompt, but any edited prompt can be saved, updated, or deleted as a named personal template and is remembered per action for next time.
-* **Section-aware & batch processing:** The AI can be pointed at specific report sections (Clinical Information, Microscopy, Diagnosis, Immunohistochemistry) instead of the whole text, and multiple selected sections can either be reviewed one dialog at a time or, optionally, together in a single side-by-side comparison window.
-* **Safety mechanisms:** Prompts are sent via a temporary UTF-8 file to avoid character corruption over legacy Windows ANSI pipes. A hard watchdog timer kills the inference process tree after 180 seconds if it hangs, preventing the main application thread from locking up. AI-generated edits are **never** applied automatically - a side-by-side diff dialog always requires the pathologist to review and explicitly accept (or reject) every suggested change before it is committed, section by section.
+### 10. Multi-User Database Capacity & Schema Migration
+- **Concurrent Network Access:** Utilizes `SQLight.ahk` running in Write-Ahead Logging (`WAL`) mode with a `10,000 ms busy_timeout` to prevent database lock conflicts across shared network drives.
+- **Alphanumeric ID Scaling:** `_NextAlphaNumericSuffix` generates Base35 code IDs, allowing up to 1,225 unique modules per organ/department combination.
+- **Data Resilience:** Silent schema migrations (`_MigrateDbSchema`) and automated daily backup rotation (`_DoDbBackup`) retain historical snapshots in `data/backup/`.
 
-### 5. Multi-User Database Safety & Schema Migration
-PathoText is works in networked environments where multiple pathologists might share the same underlying module database.
-* **Technical Implementation:** It utilizes a local SQLite engine (`SQLight.ahk`) running in Write-Ahead Logging (`WAL`) mode with a 10-second `busy_timeout`. This prevents database locking errors when multiple users access the file simultaneously.
-* **Alphanumeric Scaling:** To prevent exhausting code IDs, `_NextAlphaNumericSuffix` queries the DB directly for the next available ID using a Base35 encoding system, allowing up to 1,225 unique modules per organ/department combination.
-* **Data Integrity:** Routine backups (`_DoDbBackup`) are automatically rotated, and schema updates (`_MigrateDbSchema`) are performed silently on startup to ensure backward compatibility with older database files.
+### 11. Centralized Data Architecture & Auto-Migration
+- **Centralized `data/` Pathing:** Internal configuration, logs, and database backups reside within `data/` (`settings.ini`, `error.log`, `tts_replacements.txt`).
+- **Startup Migration (`_MigrateRootFilesToData`):** Legacy configuration files and root backups are automatically moved to their central locations on launch.
 
-### 6. Atomic Target Window Pasting
-Pasting text into third-party Laboratory Information Systems can be prone to focus-stealing errors.
-* **Technical Implementation:** The `SubmitText` function verifies the Target Window's Title and Class against the ones captured at launch. It utilizes `ClipboardAll()` to backup the user's existing clipboard, uses `ClipWait` deterministically, and forces atomic pasting via `SendInput "^v"`, completely restoring the user's clipboard state milliseconds later.
+### 12. Malignancy Filter Mode (`Ctrl + Alt + M`)
+- **Diagnostic Isolation:** Applies a bitmask SQL filter (`AND IsMalignant = 1`) to instantly constrain search results strictly to malignant/metastatic diagnoses.
+- **Visual Feedback:** Triggers a dynamic UI theme shift to a red-tinted color schema, providing immediate visual status confirmation.
 
-### 7. Database & Multi-User Capacity
+### 13. Internationalization & String Safety
+- **Localization Files:** All user-facing strings are decoupled into `.lang` key-value files (`de`, `en`, `es`, `fr`, `it`, `pl`), loaded dynamically via `T()` translation wrappers.
+- **String Integrity Audits:** Translation keys across all languages are kept strictly aligned with identical placeholder counts (`{0}`, `{1}`) to prevent formatting runtime crashes.
 
-PathoText utilizes `SQLight.ahk` for efficient local data storage and institute-wide scaling.
+### 14. Module Management, CSV & IT Security
+- **Data Exchange:** Full CSV import and export capabilities with SHA/UID validation (`ModuleUID`) to ensure catalog integrity.
+- **Hospital Network Compliance:** Encrypted local proxy storage inside `settings.ini` guarantees compatibility with restricted clinical IT network infrastructure.
+- **Data Privacy:** Local execution ensures zero patient data or medical report text leaves the institutional network boundaries.
 
-- **WAL-Mode:** The database operates in Write-Ahead Logging mode to enable safe, concurrent access by multiple pathologists on a shared network drive.
-- **Network Integrity:** Implements a `10,000 ms busy_timeout` to handle network latency without locking the GUI.
-- **Centralization:** Database paths and PDF reference folders can be configured to shared UNC paths via `settings.ini` for institute-wide uniformity.
-
-### 8. IT Security & Privacy
-
-PathoText is designed for environments where patient data must remain under local control.
-
-- Local AI processing does not send patient information to external services.
-- Database operations use prepared statements.
-- No cloud service is required for the core functionality.
-
-### 9. Malignancy Mode (`Ctrl + Alt + M`)
-
-This feature provides a focused diagnostic view for oncological reporting.
-
-- **Technical Implementation:** Activating this mode applies a bitmask-based filter (`AND IsMalignant = 1`) to the SQL query, isolating malignant entries.
-- **Visual Feedback:** The GUI triggers a color shift to a red-tinted schema via `GuiControl`, providing immediate visual confirmation that the malignancy filter is active.
-
-### 10. Internationalization & Extension
-
-PathoText is built to be language-agnostic for global medical application.
-
-- **Language Support:** All UI text resides in external `*.lang` files (key-value pairs). All six bundled languages (`de`, `en`, `es`, `fr`, `it`, `pl`) are kept in lockstep - automated checks ensure every key exists in every language and that placeholders (`{0}`, `{1}`, ...) line up.
-- **Dynamic Loading:** The `T()` translation function fetches strings upon startup based on the `Language` setting in `settings.ini`. Adding a new language simply requires creating a new `.lang` file, which the system automatically detects.
-
-### 11. Customization & Module Management
-
-PathoText provides granular control over the report output and database structure.
-
-- **Configuration:** The `settings.ini` is initialized upon first launch, capturing environmental variables and setting default paths for headers and signatures.
-- **Text Management:** Supports full CSV import/export for batch managing diagnostic modules.
-- **Validation:** Import routines include hash-based (`ModuleUID`) validation to prevent duplicate entries and maintain schema integrity.
-
-### 12. Backup & Recovery
-
-PathoText prioritizes data resilience and disaster recovery.
-
-PathoText creates automatic database backups to reduce the risk of data loss. Rollback can be initialized in the settings menu.
-
-### 13. Advanced Fuzzy Search & Medical Abbreviation Engine
-This section documents some internal implementation choices for developers and interested users. Unlike standard substring filters, the search engine is built specifically for medical terminology.
-* **Technical Implementation Details:** Uses a custom, heavily optimized Levenshtein distance algorithm (`_Levenshtein`) with an early-exit threshold to maintain O(n) performance on keystrokes.
-* **Caching (`_GetNormCache`):** Normalization (lowercasing, umlaut replacement, special character stripping) is computationally expensive. The script calculates this once per database entry upon loading and caches it, ensuring that rapid typing (`NameFilterChanged` with a 150ms debounce) remains completely lag-free.
-* **Bidirectional Expansion:** The `_FuzzyTokenMatch` function utilizes a predefined abbreviation map (`_FuzzyAbbrevMapNorm`). Searching for "bcc" automatically matches "basalzellkarzinom" and vice versa, seamlessly bridging the gap between quick shorthand and official diagnostic nomenclature.
-
-### 14. Integrated Speech-to-Text (STT)
-
-PathoText includes a fully integrated local Speech-to-Text pipeline based on **whisper.cpp**, enabling fast offline voice dictation directly into any application.
-
-* **Local Processing:** Speech recognition is performed entirely on the local machine using **whisper.cpp**. No audio is transmitted to external services, ensuring maximum privacy for sensitive medical data.
-* **Speech Manager:** A dedicated Speech Manager handles the installation of `whisper.cpp`, model downloads, microphone selection, and overall STT configuration without requiring manual setup.
-* **Audio Recording:** Audio capture is performed using **SoX (Sound eXchange)**, providing reliable microphone recording and preprocessing before transcription.
-* **Push-to-Talk Workflow:** Dictation is initiated via a configurable hotkey. Audio is recorded while the key is held and automatically transcribed when released, allowing seamless integration into existing reporting workflows.
-* **Whisper Model Support:** Multiple Whisper models are supported, allowing users to balance transcription speed, memory usage, and recognition accuracy depending on their hardware.
-* **Optional AI Post-Processing:** After transcription, the generated text can optionally be refined using an LLM to improve punctuation, capitalization, formatting, and correct common speech recognition errors while preserving the original medical content.
+### 15. Context-Aware AI Snippet Capture (`Ctrl + Alt + B`)
+Creating new diagnostic modules from recurring report fragments usually requires manual copy-pasting and formatting.
+- **Workflow & Clipboard Interception:** Pressing `Ctrl + Alt + B` captures the active text selection from any target application into the clipboard, backs up existing clipboard contents, and opens the "Add Text Snippet" dialog.
+- **Automated Text Refinement & LLM Structuring:** In Full Mode, the highlighted text is automatically passed to the local LLM. The AI strips case-specific patient details, optimizes formatting, and suggests an appropriate title, target organ, and department for the new text module.
+- **Fallback Behavior:** In Core Mode (or when local AI processing is disabled), the system bypasses LLM inference and populates the module creation form directly with the raw selected text, preserving zero-latency manual editing.
 
 ---
 
 ## Acknowledgments
 
-PathoText builds on the excellent work of several open-source projects and, for its optional AI features, publicly available language models:
+PathoText builds on the excellent work of several open-source projects:
 
-- **[AutoHotkey v2](https://www.autohotkey.com/)** - the scripting language and runtime PathoText is written in.
-- **[SQLite](https://www.sqlite.org/)** - the embedded, serverless database engine used for all local data storage, and the **[SQLight.ahk](https://github.com/Nachtgigerbyte/SQLight)**-style AutoHotkey wrapper used to access it.
-- **[llama.cpp](https://github.com/ggml-org/llama.cpp)** (and the underlying **[ggml](https://github.com/ggml-org/ggml)** tensor library) by Georgi Gerganov and contributors - the local inference engine (`llama-completion.exe` / `llama-server.exe`) that powers every offline AI feature in PathoText (MIT licence).
-- **[curl](https://curl.se/)** - used by the built-in AI Manager to download and resume model files.
-- **MedicalWP** - the icon used by the compiled script, designed by MadOyster (CC BY 3.0 US).
-- **[whisper.cpp](https://github.com/ggml-org/whisper.cpp)** (with pre-converted models available on **[Hugging Face](https://huggingface.co/ggerganov/whisper.cpp)**) by Georgi Gerganov and contributors - the high-performance local speech recognition engine that powers PathoText's offline Speech-to-Text functionality.
-- **[SoX (Sound eXchange)](https://sox.sourceforge.net/)** - the cross-platform command-line audio processing utility used for microphone recording and audio preprocessing.
-- The GGUF model files distributed for use with PathoText are quantized/republished by their respective communities, building on the original model weights released by their creators, including:
+- **[AutoHotkey v2](https://www.autohotkey.com/)** - Scripting language and runtime environment.
+- **[SQLite](https://www.sqlite.org/)** & **[SQLight.ahk](https://github.com/Nachtgigerbyte/SQLight)** - Embedded database engine and AHK wrapper interface.
+- **[llama.cpp](https://github.com/ggml-org/llama.cpp)** / **[ggml](https://github.com/ggml-org/ggml)** - Local LLM inference runtime (MIT licence).
+- **[whisper.cpp](https://github.com/ggml-org/whisper.cpp)** - High-performance local speech recognition engine.
+- **[SoX (Sound eXchange)](https://sox.sourceforge.net/)** - Command-line audio processing utility.
+- **[curl](https://curl.se/)** - File transfer and HTTP API utility.
+- **MedicalWP** - Script icon by MadOyster (CC BY 3.0 US).
+- **Language Models:**
   - **[Microsoft Phi-4-mini-instruct](https://huggingface.co/microsoft/Phi-4-mini-instruct)**, quantized by **[bartowski](https://huggingface.co/bartowski)** (MIT licence).
-  - **[Qwen3-30B-A3B-Instruct-2507](https://huggingface.co/Qwen/Qwen3-30B-A3B-Instruct-2507)** by the Qwen team (Alibaba), quantized by **[unsloth](https://huggingface.co/unsloth)** (Apache-2.0 licence).
+  - **[Qwen3-30B-A3B-Instruct-2507](https://huggingface.co/Qwen/Qwen3-30B-A3B-Instruct-2507)**, quantized by **[unsloth](https://huggingface.co/unsloth)** (Apache-2.0 licence).
