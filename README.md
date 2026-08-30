@@ -21,6 +21,9 @@ The program is intended to complement existing Laboratory Information Systems (L
 - **Multi-User SQLite Architecture:** Concurrent multi-user access via WAL-mode database operations with automatic daily rolling backups and schema migration.
 - **Direct PDF Reference Access:** Quick access to linked diagnostic guidelines, WHO classification manuals, and institutional standards.
 - **CSV Data Exchange & Security:** Full CSV import/export for diagnostic modules with hash-based UID duplicate prevention and standard proxy network support.
+- **Interactive AI Query Engine (`Ctrl + Alt + Q`):** Floating prompt interface for instant local LLM queries with custom system prompts and direct text insertion into active target windows.
+- **Dedicated Word Library & Punctuation Manager:** Full-featured GUI for managing custom speech-to-text replacement rules, multi-line substitutions (`\n`), and localized default quote styles.
+- **Unified Live AI Wait Indicator:** Real-time visual overlay providing dynamic elapsed-second tracking for all local AI background tasks (STT, grammar cleanup, snippets, and queries).
 
 ---
 
@@ -95,7 +98,7 @@ When PathoText is started for the first time, it automatically detects that no `
 ### Initial Setup
 
 1. **Launch the application**
-   - Run `PathoText.exe` (or `PathoText.ahk` in source mode).
+   - Run `PathoText.exe` (or `PathoText.ahk` in source mode with installed **Autohotkey v2**).
 
 2. **Configuration Wizard**
    - A guided setup dialog will prompt you to configure the core application paths and defaults (interface language, global hotkey, section labels, database location, PDF directory, and your signature).
@@ -165,6 +168,7 @@ PathoText is built for absolute keyboard efficiency.
 | `F5` | **Launch/Cycle:** Opens the GUI if closed. If open, acts as shortcut for the 4th department. |
 | `Ctrl + Alt + B` | **AI Snippet Capture:** Reads selection from clipboard, analyzes with LLM, and opens pre-filled "Add text snippet" dialog. |
 | `Ctrl + Alt + R` | **Add Text Replacement:** Reads highlighted text and opens the automated STT/text replacement setup dialog. |
+| `Ctrl + Alt + Q` | **AI Query Engine:** Opens the floating AI prompt window (Full Mode) or displays a status notice (Core Mode). |
 
 ### Navigation & Search
 | Shortcut | Action |
@@ -281,6 +285,14 @@ Creating new diagnostic modules from recurring report fragments usually requires
 - **Automated Text Refinement & LLM Structuring:** In Full Mode, the highlighted text is automatically passed to the local LLM. The AI strips case-specific patient details, optimizes formatting, and suggests an appropriate title, target organ, and department for the new text module.
 - **Fallback Behavior:** In Core Mode (or when local AI processing is disabled), the system bypasses LLM inference and populates the module creation form directly with the raw selected text, preserving zero-latency manual editing.
 
+### 16. Word Library & Punctuation Defaults
+- **Centralized Rule Management:** Replaces manual editing of `data/tts_replacements.txt` with a debounced search-enabled GUI, supporting full CRUD operations for phonetic and misrecognition corrections.
+- **Multi-line & Escape Parsing:** Preserves single-line file structure while parsing escaped line breaks (`\n`) and paragraph breaks (`\n\n`), visually represented as `⏎` and `⏎⏎` within the rule management list.
+- **Dynamic Localized Defaults (`_WlGetPunctDefaults`):** Automatically injects 15 standard punctuation rules adapted to the active UI language (e.g., German/Polish `„ ... “`, French/Italian/Spanish `« ... »`, or English `“ ... ”`).
+
+### 17. Asynchronous AI Query Engine (`Ctrl + Alt + Q`)
+- **Non-Blocking Execution:** Operates as a top-left anchored (`x10 y10`), single-instance floating utility (`+AlwaysOnTop +ToolWindow`). Uses asynchronous `SetTimer` routines during LLM execution to prevent UI freezing.
+- **Workflow & Insertion:** Features collapsible system prompt presets tailored for pathology queries. Generated answers can be copied or pasted directly into the validated LIS target window via `SendText()`.
 ---
 
 ## Acknowledgments
