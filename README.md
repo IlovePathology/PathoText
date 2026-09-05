@@ -24,7 +24,7 @@ The program is intended to complement existing Laboratory Information Systems (L
 - **Interactive AI Query Engine (`Ctrl + Alt + Q`):** Floating prompt interface for instant local LLM queries with custom system prompts and direct text insertion into active target windows.
 - **Dedicated Word Library & Punctuation Manager:** Full-featured GUI for managing custom speech-to-text replacement rules, multi-line substitutions (`\n`), and localized default quote styles.
 - **Unified Live AI Wait Indicator:** Real-time visual overlay providing dynamic elapsed-second tracking for all local AI background tasks (STT, grammar cleanup, snippets, and queries).
-
+- **Target Field Capture:** (Settings → Section Labels → Target Fields): An optional feature that lets you map each report section (Macroscopy, Microscopy, Diagnosis, IHC) to a specific text field in your LIS by simply clicking on it — PathoText will then inject each section's text directly into the correct field when submitting, without relying on coordinates or clipboard focus.
 ---
 
 ## Architecture & Modes
